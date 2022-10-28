@@ -1,14 +1,19 @@
-import NextAuth, { type NextAuthOptions } from "next-auth";
-import DiscordProvider from "next-auth/providers/discord";
-import { env } from "../../../env/server.mjs";
+import NextAuth, { type NextAuthOptions } from 'next-auth';
+import DiscordProvider from 'next-auth/providers/discord';
+import { env } from '~/env/server.mjs';
 
 export const authOptions: NextAuthOptions = {
   // Include user.id on session
   callbacks: {
-    session({ session, user }) {
-      console.log({ session, user });
-      if (session.user) {
-        session.user.id = user.id;
+    jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+      }
+      return token;
+    },
+    session({ session, token }) {
+      if (session.user && token.sub) {
+        session.user.id = token.sub;
       }
       return session;
     },
@@ -18,6 +23,11 @@ export const authOptions: NextAuthOptions = {
     DiscordProvider({
       clientId: env.DISCORD_CLIENT_ID,
       clientSecret: env.DISCORD_CLIENT_SECRET,
+      authorization: {
+        params: {
+          scope: 'guilds',
+        },
+      },
     }),
     // ...add more providers here
   ],
